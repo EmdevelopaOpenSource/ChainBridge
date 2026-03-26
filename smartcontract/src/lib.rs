@@ -43,7 +43,7 @@ impl ChainBridge {
         amount: i128,
         hash_lock: soroban_sdk::BytesN<32>,
         time_lock: u64,
-        multi_sig: Option<crate::types::MultiSigConfig>,
+        multi_sig: OptMultiSig,
     ) -> Result<u64, Error> {
         sender.require_auth();
         htlc::create_htlc(&env, &sender, &receiver, amount, hash_lock, time_lock, multi_sig)
@@ -230,7 +230,14 @@ impl ChainBridge {
     ) -> Result<u64, Error> {
         sender.require_auth();
         htlc::create_htlc_with_algorithm(
-            &env, &sender, &receiver, amount, hash_lock, time_lock, algorithm,
+            &env,
+            &sender,
+            &receiver,
+            amount,
+            hash_lock,
+            time_lock,
+            OptMultiSig::None,
+            algorithm,
         )
     }
 

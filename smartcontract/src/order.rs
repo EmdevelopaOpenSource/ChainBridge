@@ -197,9 +197,9 @@ pub fn match_order_partial(
         id: swap_id,
         stellar_htlc_id: 0,
         other_chain: order.from_chain.clone(),
-        other_chain_tx: String::from_slice(env, ""),
+        other_chain_tx: String::from_str(env, ""),
         stellar_party: counterparty.clone(),
-        other_party: String::from_slice(env, ""),
+        other_party: String::from_str(env, ""),
         state: crate::types::SwapState::Initiated,
         updated_at: current_time,
     };

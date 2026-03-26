@@ -27,6 +27,19 @@ pub struct MultiSigConfig {
     pub signatures: soroban_sdk::Vec<Address>,
 }
 
+/// Soroban-compatible optional wrapper for MultiSigConfig.
+///
+/// Rust's `Option<MultiSigConfig>` cannot be used directly as a `#[contracttype]`
+/// field because the Soroban XDR serialization layer does not generate a
+/// `TryFrom<ScVal>` impl for `Option<CustomContractType>`. Using a first-class
+/// enum avoids that limitation while preserving the same semantics.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum OptMultiSig {
+    None,
+    Config(MultiSigConfig),
+}
+
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 #[allow(clippy::upper_case_acronyms)]
@@ -78,7 +91,7 @@ pub struct HTLC {
     pub status: HTLCStatus,
     pub secret: Option<Bytes>,
     pub created_at: u64,
-    pub multi_sig: Option<MultiSigConfig>,
+    pub multi_sig: OptMultiSig,
     /// Hash algorithm used for this HTLC's hash lock.
     pub hash_algorithm: HashAlgorithm,
 }

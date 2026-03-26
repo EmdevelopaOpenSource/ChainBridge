@@ -4,7 +4,7 @@ use super::*;
 use crate::types::{AdvancedOrderType, GovernanceConfig, HashAlgorithm, ProposalStatus, VoteChoice};
 use soroban_sdk::{
     testutils::{Address as _, Ledger as _},
-    Address, Bytes, BytesN, Env, String,
+    Address, Bytes, BytesN, Env, String, Vec,
 };
 
 fn setup_contract() -> (Env, Address, ChainBridgeClient<'static>) {
@@ -28,7 +28,7 @@ fn create_test_htlc(
     let secret = Bytes::from_slice(env, secret_bytes);
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + duration_secs;
-    client.create_htlc(sender, receiver, &amount, &hash_lock, &time_lock)
+    client.create_htlc(sender, receiver, &amount, &hash_lock, &time_lock, &OptMultiSig::None)
 }
 
 // =============================================================================
@@ -71,7 +71,7 @@ fn test_error_invalid_amount_zero_htlc() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    client.create_htlc(&sender, &receiver, &0, &hash_lock, &time_lock);
+    client.create_htlc(&sender, &receiver, &0, &hash_lock, &time_lock, &OptMultiSig::None);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn test_error_invalid_amount_negative_htlc() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    client.create_htlc(&sender, &receiver, &-1000, &hash_lock, &time_lock);
+    client.create_htlc(&sender, &receiver, &-1000, &hash_lock, &time_lock, &OptMultiSig::None);
 }
 
 #[test]
@@ -132,7 +132,7 @@ fn test_error_invalid_timelock_past() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let past_time = env.ledger().timestamp() - 100;
 
-    client.create_htlc(&sender, &receiver, &1000, &hash_lock, &past_time);
+    client.create_htlc(&sender, &receiver, &1000, &hash_lock, &past_time, &OptMultiSig::None);
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn test_error_invalid_timelock_now() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let now = env.ledger().timestamp();
 
-    client.create_htlc(&sender, &receiver, &1000, &hash_lock, &now);
+    client.create_htlc(&sender, &receiver, &1000, &hash_lock, &now, &OptMultiSig::None);
 }
 
 #[test]
@@ -292,7 +292,7 @@ fn test_error_invalid_secret_wrong_secret() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&original_secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     let wrong_secret = Bytes::from_slice(&env, &[2u8; 32]);
     client.claim_htlc(&receiver, &htlc_id, &wrong_secret);
@@ -332,7 +332,7 @@ fn test_error_already_claimed_double_claim() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     client.claim_htlc(&receiver, &htlc_id, &secret);
     client.claim_htlc(&receiver, &htlc_id, &secret);
@@ -370,7 +370,7 @@ fn test_error_already_claimed_cannot_refund() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     client.claim_htlc(&receiver, &htlc_id, &secret);
 
@@ -397,7 +397,7 @@ fn test_error_htlc_expired_claim_after_timeout() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 100;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     env.ledger().set_timestamp(time_lock + 1);
 
@@ -418,7 +418,7 @@ fn test_error_htlc_expired_claim_at_exact_timeout() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 100;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     env.ledger().set_timestamp(time_lock);
 
@@ -632,7 +632,7 @@ fn test_htlc_claim_before_expiry() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     env.ledger().set_timestamp(env.ledger().timestamp() + 43200);
 
@@ -728,7 +728,7 @@ fn test_htlc_claim_one_second_before_expiry() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 100;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     env.ledger().set_timestamp(time_lock - 1);
 
@@ -910,7 +910,7 @@ fn test_sha256_htlc_rejects_keccak256_secret() {
     let time_lock = env.ledger().timestamp() + 86400;
 
     // Lock with SHA256 (default)
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &sha256_hash, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &sha256_hash, &time_lock, &OptMultiSig::None);
 
     // Build a keccak-based HTLC and try to claim the SHA256 one with the wrong hash
     let wrong_hash = env.crypto().keccak256(&secret);
@@ -947,7 +947,7 @@ fn test_sha256_htlc_stores_algorithm() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
     let htlc = client.get_htlc(&htlc_id);
 
     assert_eq!(htlc.hash_algorithm, HashAlgorithm::SHA256);
@@ -992,7 +992,7 @@ fn test_get_revealed_secret_after_claim() {
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 86400;
 
-    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&sender, &receiver, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     assert_eq!(client.get_secret(&htlc_id), None);
 
@@ -1390,7 +1390,7 @@ fn test_full_atomic_swap_flow() {
     let secret = Bytes::from_slice(&env, &[0x11u8; 32]);
     let hash_lock: BytesN<32> = env.crypto().sha256(&secret).into();
     let time_lock = env.ledger().timestamp() + 7200;
-    let htlc_id = client.create_htlc(&alice, &bob, &1000, &hash_lock, &time_lock);
+    let htlc_id = client.create_htlc(&alice, &bob, &1000, &hash_lock, &time_lock, &OptMultiSig::None);
 
     // Bob claims the HTLC by revealing the secret
     client.claim_htlc(&bob, &htlc_id, &secret);
@@ -1502,6 +1502,7 @@ fn test_stress_20_htlcs() {
             &((i as i128 + 1) * 100),
             &hash_lock,
             &time_lock,
+            &OptMultiSig::None,
         );
         htlc_ids.push_back(htlc_id);
     }
