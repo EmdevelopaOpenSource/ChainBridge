@@ -10,6 +10,7 @@ import { Layers } from "lucide-react";
 const NAV_LINKS = [
   { name: "Swap", href: "/swap" },
   { name: "Market", href: "/marketplace" },
+  { name: "Protocol", href: "/protocol" },
   { name: "Explorer", href: "/transactions" },
   { name: "About", href: "/about" },
 ];
