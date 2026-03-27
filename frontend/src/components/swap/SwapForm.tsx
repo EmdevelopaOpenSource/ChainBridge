@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useAddressValidation } from "@/hooks/useAddressValidation";
 import { getAddressErrorMessage } from "@/lib/addressValidation";
+import TimelockWarnings from "./TimelockWarnings";
+import FeeDisplay from "./FeeDisplay";
 
 type Chain = "stellar" | "bitcoin" | "ethereum";
 type SwapStep = "form" | "confirm" | "submitting" | "success" | "error";
@@ -311,11 +313,19 @@ export default function SwapForm() {
         ))}
       </select>
 
-      {/* Fee Estimate */}
-      <div className="flex justify-between text-sm text-gray-500 mb-6">
-        <span>Estimated Fee</span>
-        <span>{ESTIMATED_FEES[form.sourceChain]}</span>
-      </div>
+      {/* Timelock warnings */}
+      <TimelockWarnings
+        timelockHours={form.timelockHours}
+        sourceChain={form.sourceChain}
+        destChain={form.destChain}
+      />
+
+      {/* Fee Breakdown */}
+      <FeeDisplay
+        sourceChain={form.sourceChain}
+        destChain={form.destChain}
+        amount={form.amount ? parseFloat(form.amount) : undefined}
+      />
 
       {/* Validation error */}
       {form.sourceChain === form.destChain && (
